@@ -1,0 +1,24 @@
+# Secrets — NEVER push these
+.streamlit/secrets.toml
+secrets.toml.example
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+PG/
+env/
+.venv/
+
+# Test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS files
+.DS_Store
+Thumbs.db
