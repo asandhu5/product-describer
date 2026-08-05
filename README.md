@@ -8,32 +8,21 @@
 ![Tests](https://img.shields.io/badge/Tests-33%20passed-brightgreen)
 
 ---
+## 📌 What it does?
 
-## 📁 Folder Structure
+AI Product Describer is a Streamlit web app that takes a product photo and uses Claude's vision model to generate ready-to-use marketing copy — tailored to the platform and tone you choose.
 
-```
-ai-product-describer/
-├── app.py                    ← Streamlit UI
-├── utils.py                  ← All business logic (testable)
-├── requirements.txt          ← Python dependencies
-├── secrets.toml.example      ← Template for your API key
-├── .gitignore                ← Hides secrets and cache
-└── .streamlit/
-    ├── config.toml           ← Theme and upload size
-    └── secrets.toml          ← Your actual API key (never pushed)
-└── tests/
-    ├── __init__.py
-    ├── conftest.py
-    └── test_utils.py         ← 33 unit tests
-```
+Whether you're listing on Amazon, writing luxury brand prose, or drafting an Instagram caption, the app generates polished output in under 10 seconds.
 
 ---
 
-## ▶️ HOW TO RUN LOCALLY (Step by Step)
+## ▶️ HOW TO RUN  (Step by Step)
 
-### Step 1 — Open terminal in this folder
+### Step 1 — Clone this repo
 
 ```bash
+
+git clone git@github.com:asandhu5/product-describer.git
 cd ai-product-describer
 ```
 
@@ -48,8 +37,6 @@ source venv/bin/activate
 python -m venv venv
 venv\Scripts\activate
 ```
-
-You will see `(venv)` appear at the start of your terminal line.
 
 ### Step 3 — Install all dependencies
 
@@ -87,48 +74,25 @@ Expected result: **33 passed**
 
 ---
 
-## 🐙 HOW TO PUSH TO GITHUB
+## ✨ Features
 
-### Step 1 — Create a new repo on GitHub
-1. Go to https://github.com/new
-2. Name: `ai-product-describer`
-3. Set to **Public**
-4. Do NOT check "Add README"
-5. Click **Create repository**
+| Feature | Detail |
+|---|---|
+| 🖼️ **Vision-Powered** | Claude reads and understands the actual product image |
+| 🎨 **4 Description Styles** | E-commerce, Luxury Brand, Technical/Detailed, Casual/Social Media |
+| 🗣️ **4 Writing Tones** | Professional, Friendly, Persuasive, Minimal |
+| 📏 **Word Count Control** | Slider from 50 → 350 words |
+| ⬇️ **Download Output** | Export generated description as a .txt file |
+| 🧪 **Unit Tests** | Full test suite, zero API calls needed |
 
-### Step 2 — Push from your terminal
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: AI Product Describer"
-git remote add origin https://github.com/YOUR_USERNAME/ai-product-describer.git
-git branch -M main
-git push -u origin main
-```
+---
+## 📋 Supported Formats
+JPG · JPEG · PNG · WEBP — max 16 MB
 
 ---
 
-## ☁️ HOW TO DEPLOY ON STREAMLIT CLOUD (Free Live Link)
+## 📄 License
 
-1. Go to https://share.streamlit.io and sign in with GitHub
-2. Click **New app**
-3. Select your repo: `YOUR_USERNAME/ai-product-describer`
-4. Branch: `main` | Main file: `app.py`
-5. Click **Advanced settings** → paste in **Secrets**:
-   ```toml
-   ANTHROPIC_API_KEY = "sk-ant-your-actual-key-here"
-   ```
-6. Click **Deploy** — live in ~2 minutes
+Licensed under the **MIT License**.
 
 ---
-
-## 🔄 How to Update After Changes
-
-```bash
-git add .
-git commit -m "What you changed"
-git push
-```
-
-Streamlit Cloud redeploys automatically.
