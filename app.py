@@ -1,8 +1,15 @@
+import base64
+
 import streamlit as st
-import anthropic
+from google import genai
+from google.genai import types
+from google.genai.errors import ClientError, ServerError
 from PIL import Image
 
-from utils import STYLE_PROMPTS, image_to_base64, count_words, build_prompt
+from utils import STYLE_PROMPTS, image_to_base64, count_words, build_prompt, strip_markdown
+
+# Free tier, no credit card required. Get a key at https://aistudio.google.com
+GEMINI_MODEL = "gemini-3.6-flash"
 
 # ── Page Config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -22,11 +29,28 @@ if "used_style" not in st.session_state:
 # ── Custom CSS ────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    [data-testid="stAppViewContainer"] { background-color: #f8f9fa; }
-    [data-testid="stSidebar"]          { background-color: #1a1a2e; }
-    [data-testid="stSidebar"] *        { color: white !important; }
+    [data-testid="stAppViewContainer"] { background-color: #f4f5f9; }
+    [data-testid="stSidebar"]          { background-color: #171730; }
+    [data-testid="stSidebar"] *        { color: #eaeaf5 !important; }
+
+    /* Sidebar dropdowns (selectbox) — fix invisible white-on-white */
+    [data-testid="stSidebar"] [data-baseweb="select"] > div {
+        background-color: #262646 !important;
+        border: 1px solid #3d3d66 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] [data-baseweb="select"] svg { fill: #eaeaf5 !important; }
+
+    /* Dropdown option list renders in a portal outside the sidebar */
+    [data-baseweb="popover"] ul { background-color: #1f1f3a !important; }
+    [data-baseweb="popover"] li { color: #eaeaf5 !important; }
+    [data-baseweb="popover"] li:hover { background-color: #2f2f5a !important; }
+
+    /* Slider */
+    [data-testid="stSidebar"] [data-baseweb="slider"] { padding-top: 6px; }
+
     .stButton > button {
-        background-color: #1a1a2e;
+        background-color: #171730;
         color: white;
         border: none;
         border-radius: 8px;
@@ -34,22 +58,24 @@ st.markdown("""
         font-size: 1rem;
         padding: 0.6em 1.2em;
     }
-    .stButton > button:hover { background-color: #16213e; border: none; }
+    .stButton > button:hover { background-color: #262650; border: none; }
+
     .description-card {
         background: white;
         border-radius: 12px;
         padding: 1.5rem 1.8rem;
         border: 1px solid #e0e0e0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        line-height: 1.7;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        line-height: 1.75;
+        color: #1a1a2e;
     }
-    h1 { color: #1a1a2e; }
+    h1 { color: #171730; }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Header ────────────────────────────────────────────────────────────────────
 st.title("🛍️ AI Product Description Generator")
-st.caption("Upload any product image → Claude AI generates a compelling description instantly")
+st.caption("Upload any product image → Gemini generates a compelling description instantly")
 st.divider()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -77,7 +103,7 @@ with st.sidebar:
     st.markdown("JPG · PNG · JPEG · WEBP")
     st.caption("Max file size: 16 MB")
     st.markdown("---")
-    st.caption("Powered by Claude claude-sonnet-4-6 Vision")
+    st.caption(f"Powered by Gemini ({GEMINI_MODEL}) Vision")
 
 # ── Main Layout ───────────────────────────────────────────────────────────────
 col_left, col_right = st.columns([1, 1], gap="large")
@@ -118,58 +144,50 @@ with col_right:
 
             with st.spinner("🤖 Analyzing image and writing description..."):
                 try:
-                    client = anthropic.Anthropic(
-                        api_key=st.secrets["ANTHROPIC_API_KEY"]
-                    )
-                    response = client.messages.create(
-                        model="claude-sonnet-4-6",
-                        max_tokens=1024,
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": [
-                                    {
-                                        "type": "image",
-                                        "source": {
-                                            "type": "base64",
-                                            "media_type": "image/png",
-                                            "data": img_b64,
-                                        },
-                                    },
-                                    {"type": "text", "text": prompt},
-                                ],
-                            }
+                    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+                    response = client.models.generate_content(
+                        model=GEMINI_MODEL,
+                        contents=[
+                            types.Part.from_bytes(
+                                data=base64.b64decode(img_b64),
+                                mime_type="image/png",
+                            ),
+                            prompt,
                         ],
                     )
-                    st.session_state.description = response.content[0].text
+                    st.session_state.description = strip_markdown(response.text)
                     st.session_state.word_count  = count_words(st.session_state.description)
                     st.session_state.used_style  = style.split("(")[0].strip()
 
-                except anthropic.AuthenticationError:
-                    st.error("❌ Invalid API key. Check `.streamlit/secrets.toml`.")
+                except ClientError as e:
+                    if e.code == 401 or e.code == 403:
+                        st.error("❌ Invalid API key. Check `.streamlit/secrets.toml`.")
+                    elif e.code == 429:
+                        st.error("❌ Rate limit reached. Wait a moment and try again.")
+                    else:
+                        st.error(f"❌ Gemini API error: {e}")
                     st.session_state.description = None
-                except anthropic.RateLimitError:
-                    st.error("❌ Rate limit reached. Wait a moment and try again.")
+                except ServerError as e:
+                    st.error(f"❌ Gemini server error — usually transient, try again shortly. ({e})")
                     st.session_state.description = None
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
                     st.session_state.description = None
 
         if st.session_state.description:
-            st.markdown(
-                f'<div class="description-card">{st.session_state.description}</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown("&nbsp;", unsafe_allow_html=True)
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Words",  st.session_state.word_count)
-            m2.metric("Style",  st.session_state.used_style)
-            m3.metric("Model",  "Sonnet 4.6")
-            st.divider()
+            # Download + metrics sit above the description card, not below it.
             st.download_button(
                 label="⬇️ Download as .txt",
                 data=st.session_state.description,
                 file_name="product_description.txt",
                 mime="text/plain",
                 use_container_width=True,
+            )
+            m1, m2, m3 = st.columns(3)
+            st.divider()
+
+            display_text = st.session_state.description.replace("\n", "<br>")
+            st.markdown(
+                f'<div class="description-card">{display_text}</div>',
+                unsafe_allow_html=True,
             )
