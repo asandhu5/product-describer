@@ -8,6 +8,20 @@
 ![Tests](https://img.shields.io/badge/Tests-33%20passed-brightgreen)
 
 ---
+## Demo
+E-commerce, luxury, technical, and social outputs from one image.
+
+<img src="assets/model_selection.gif" width="650" >
+
+Product photo (Amazon) uploaded and description text generating in the output panel
+
+<img src="assets/Amazon_product.gif" width="650" >
+
+Product photo (luxury item) uploaded and description text generating in the output panel
+
+<img src="assets/luxury_product.gif" width="650" >
+
+---
 ## 📌 What it does?
 
 AI Product Describer is a Streamlit web app that takes a product photo and uses Gemini's vision model to generate ready-to-use marketing copy — tailored to the platform and tone you choose.
